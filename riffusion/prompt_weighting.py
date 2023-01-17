@@ -5,12 +5,14 @@ This code is taken from the diffusers community pipeline:
 
 License: Apache 2.0
 """
-import logging
 import re
 from typing import List, Optional, Union
 
+import logging
 import torch
+
 from diffusers import StableDiffusionPipeline
+
 
 logger = logging.getLogger(__name__)
 
@@ -151,11 +153,15 @@ def get_prompts_with_weights(pipe: StableDiffusionPipeline, prompt: List[str], m
         tokens.append(text_token)
         weights.append(text_weight)
     if truncated:
-        logger.warning("Prompt was truncated. Try to shorten the prompt or increase max_embeddings_multiples")
+        logger.warning(
+            "Prompt was truncated. Try to shorten the prompt or increase max_embeddings_multiples"
+        )
     return tokens, weights
 
 
-def pad_tokens_and_weights(tokens, weights, max_length, bos, eos, no_boseos_middle=True, chunk_length=77):
+def pad_tokens_and_weights(
+    tokens, weights, max_length, bos, eos, no_boseos_middle=True, chunk_length=77
+):
     r"""
     Pad the tokens (with starting and ending tokens) and weights (with 1.0) to max_length.
     """
@@ -172,7 +178,9 @@ def pad_tokens_and_weights(tokens, weights, max_length, bos, eos, no_boseos_midd
             else:
                 for j in range(max_embeddings_multiples):
                     w.append(1.0)  # weight for starting token in this chunk
-                    w += weights[i][j * (chunk_length - 2) : min(len(weights[i]), (j + 1) * (chunk_length - 2))]
+                    w += weights[i][
+                        j * (chunk_length - 2) : min(len(weights[i]), (j + 1) * (chunk_length - 2))
+                    ]
                     w.append(1.0)  # weight for ending token in this chunk
                 w += [1.0] * (weights_length - len(w))
             weights[i] = w[:]
@@ -195,7 +203,9 @@ def get_unweighted_text_embeddings(
         text_embeddings = []
         for i in range(max_embeddings_multiples):
             # extract the i-th chunk
-            text_input_chunk = text_input[:, i * (chunk_length - 2) : (i + 1) * (chunk_length - 2) + 2].clone()
+            text_input_chunk = text_input[
+                :, i * (chunk_length - 2) : (i + 1) * (chunk_length - 2) + 2
+            ].clone()
 
             # cover the head and the tail by the starting and the ending tokens
             text_input_chunk[:, 0] = text_input[0, 0]
@@ -265,14 +275,24 @@ def get_weighted_text_embeddings(
         if uncond_prompt is not None:
             if isinstance(uncond_prompt, str):
                 uncond_prompt = [uncond_prompt]
-            uncond_tokens, uncond_weights = get_prompts_with_weights(pipe, uncond_prompt, max_length - 2)
+            uncond_tokens, uncond_weights = get_prompts_with_weights(
+                pipe, uncond_prompt, max_length - 2
+            )
     else:
-        prompt_tokens = [token[1:-1] for token in pipe.tokenizer(prompt, max_length=max_length, truncation=True).input_ids]
+        prompt_tokens = [
+            token[1:-1]
+            for token in pipe.tokenizer(prompt, max_length=max_length, truncation=True).input_ids
+        ]
         prompt_weights = [[1.0] * len(token) for token in prompt_tokens]
         if uncond_prompt is not None:
             if isinstance(uncond_prompt, str):
                 uncond_prompt = [uncond_prompt]
-            uncond_tokens = [token[1:-1] for token in pipe.tokenizer(uncond_prompt, max_length=max_length, truncation=True).input_ids]
+            uncond_tokens = [
+                token[1:-1]
+                for token in pipe.tokenizer(
+                    uncond_prompt, max_length=max_length, truncation=True
+                ).input_ids
+            ]
             uncond_weights = [[1.0] * len(token) for token in uncond_tokens]
 
     # round up the longest length of tokens to a multiple of (model_max_length - 2)
@@ -327,7 +347,9 @@ def get_weighted_text_embeddings(
             pipe.tokenizer.model_max_length,
             no_boseos_middle=no_boseos_middle,
         )
-        uncond_weights = torch.tensor(uncond_weights, dtype=uncond_embeddings.dtype, device=pipe.device)
+        uncond_weights = torch.tensor(
+            uncond_weights, dtype=uncond_embeddings.dtype, device=pipe.device
+        )
 
     # assign weights to the prompts and normalize in the sense of mean
     # TODO: should we normalize by chunk or in a whole (current implementation)?
@@ -337,7 +359,9 @@ def get_weighted_text_embeddings(
         current_mean = text_embeddings.float().mean(axis=[-2, -1]).to(text_embeddings.dtype)
         text_embeddings *= (previous_mean / current_mean).unsqueeze(-1).unsqueeze(-1)
         if uncond_prompt is not None:
-            previous_mean = uncond_embeddings.float().mean(axis=[-2, -1]).to(uncond_embeddings.dtype)
+            previous_mean = (
+                uncond_embeddings.float().mean(axis=[-2, -1]).to(uncond_embeddings.dtype)
+            )
             uncond_embeddings *= uncond_weights.unsqueeze(-1)
             current_mean = uncond_embeddings.float().mean(axis=[-2, -1]).to(uncond_embeddings.dtype)
             uncond_embeddings *= (previous_mean / current_mean).unsqueeze(-1).unsqueeze(-1)

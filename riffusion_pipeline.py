@@ -17,10 +17,7 @@ from diffusers.schedulers import DDIMScheduler, LMSDiscreteScheduler, PNDMSchedu
 from diffusers.utils import logging
 from transformers import CLIPFeatureExtractor, CLIPTextModel, CLIPTokenizer
 
-try:
-    from datatypes import InferenceInput
-except:
-    from .datatypes import InferenceInput
+from .datatypes import InferenceInput
 
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 

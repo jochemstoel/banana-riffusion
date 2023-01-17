@@ -5,11 +5,11 @@ import io
 import typing as T
 
 import numpy as np
+from PIL import Image
 import pydub
+from scipy.io import wavfile
 import torch
 import torchaudio
-from PIL import Image
-from scipy.io import wavfile
 
 
 def wav_bytes_from_spectrogram_image(image: Image.Image) -> T.Tuple[io.BytesIO, float]:
@@ -60,7 +60,9 @@ def wav_bytes_from_spectrogram_image(image: Image.Image) -> T.Tuple[io.BytesIO, 
     return wav_bytes, duration_s
 
 
-def spectrogram_from_image(image: Image.Image, max_volume: float = 50, power_for_image: float = 0.25) -> np.ndarray:
+def spectrogram_from_image(
+    image: Image.Image, max_volume: float = 50, power_for_image: float = 0.25
+) -> np.ndarray:
     """
     Compute a spectrogram magnitude array from a spectrogram image.
 
